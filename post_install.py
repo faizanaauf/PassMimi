@@ -3,9 +3,8 @@ import requests
 import zipfile
 from io import BytesIO
 
-# Cloud link to your ZIP wordlist (replace below with your link)
-WORDLIST_URL = "https://drive.google.com/file/d/1cm8Xh8e4s0zFZlHtbnkJigG3JnkVdwHc/view?usp=drive_link"
-
+# Dropbox direct download link (use dl=1)
+WORDLIST_URL = "https://www.dropbox.com/scl/fi/8bxum1rn8j2iw97i44izk/wordlists.zip?rlkey=kxijb72ndw90pkkn30nrcrroh&st=pmwi2iji&dl=1"
 DEST_DIR = "wordlists"
 
 def download_and_extract():
@@ -14,7 +13,8 @@ def download_and_extract():
     
     response = requests.get(WORDLIST_URL, stream=True)
     response.raise_for_status()
-    
+
+    # Save to memory
     with zipfile.ZipFile(BytesIO(response.content)) as zip_ref:
         zip_ref.extractall(DEST_DIR)
     

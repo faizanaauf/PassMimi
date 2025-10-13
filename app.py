@@ -41,9 +41,9 @@ def check_in_wordlists(password):
         else:
             try:
                 with open(path, "r", encoding="latin-1", errors="ignore") as f:
-                     if f'{password}\n' in f.read():
-                        found_lists.append(os.path.basename(path))
-                        return found_lists
+                      if f'{password}\n' in f.read():
+                          found_lists.append(os.path.basename(path))
+                          return found_lists
             except Exception:
                 continue
     return found_lists
@@ -241,34 +241,22 @@ TEMPLATE = '''
                 radial-gradient(circle at 90% 80%, rgba(138, 43, 226, 0.05) 0%, transparent 20%);
         }
 
-        /* --- KEY STYLES FOR LAYOUT TRANSITION --- */
         .main-container {
             display: flex;
-            /* 1. Initially, this centers the input field on the screen */
             justify-content: center; 
             align-items: center;
             min-height: 100vh;
-            /* 2. This makes the change from center to left/right animated */
             transition: all 0.5s ease; 
             padding: 2rem;
             position: relative;
         }
 
-        /* 3. This class is ADDED by JavaScript after a password is submitted */
         .main-container.with-result {
-            /* 4. This rule overrides 'justify-content: center' and pushes the input to the left and results to the right */
             justify-content: space-between; 
             max-width: 1200px;
             margin: 0 auto;
         }
-        /* --- END OF KEY STYLES --- */
 
-        @media (max-width: 900px) {
-            .main-container.with-result {
-                flex-direction: column;
-                gap: 2rem;
-            }
-        }
         .center-container {
             display: flex;
             flex-direction: column;
@@ -311,10 +299,8 @@ TEMPLATE = '''
         .pulse { animation: pulse 1.5s ease-in-out infinite alternate; }
         @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
         
-        /* --- STYLES FOR THE RESULT CARD --- */
         .result-section {
             background: var(--surface); border-radius: 20px; padding: 2.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05);
-            /* 1. It is initially invisible and slightly to the right */
             opacity: 0;
             transform: translateX(50px);
             transition: all 0.5s ease;
@@ -322,12 +308,10 @@ TEMPLATE = '''
         }
         .result-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary)); }
         
-        /* 2. When this class is added by JS, it fades and slides into view */
         .result-section.active {
             opacity: 1;
             transform: translateX(0);
         }
-        /* --- END OF RESULT STYLES --- */
 
         .result-title { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--text); }
         .strength-display { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
@@ -345,6 +329,68 @@ TEMPLATE = '''
         .suggestion { background: var(--surface-light); padding: 1.2rem; border-radius: 12px; margin-bottom: 1.5rem; border-left: 4px solid var(--info); }
         .suggestion-title { font-weight: 600; margin-bottom: 0.5rem; color: var(--info); }
         .footer { margin-top: 2rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem; }
+
+        /* --- START: RESPONSIVE DESIGN STYLES --- */
+        @media (max-width: 900px) {
+            .main-container {
+                /* On mobile, use less horizontal padding */
+                padding: 1rem;
+            }
+
+            .main-container.with-result {
+                /* Stack the input and result cards vertically */
+                flex-direction: column;
+                gap: 2rem;
+                justify-content: flex-start;
+                align-items: center;
+                /* Allow page to scroll if content is long */
+                min-height: unset; 
+            }
+
+            .main-container.with-result .center-container,
+            .result-section {
+                /* Make both cards take the full width of the screen */
+                width: 100%;
+            }
+
+            /* The result card animates from the bottom on mobile instead of the side */
+            .result-section {
+                transform: translateY(30px);
+            }
+            .result-section.active {
+                transform: translateY(0);
+            }
+
+            /* Re-center the header text when cards are stacked */
+            .main-container.with-result .header {
+                align-items: center;
+            }
+            .main-container.with-result .brand,
+            .main-container.with-result .tagline {
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .input-section, .result-section {
+                /* Reduce padding on very small screens for more space */
+                padding: 1.5rem;
+            }
+
+            .details-grid {
+                /* Stack the detail items in a single column instead of a 2x2 grid */
+                grid-template-columns: 1fr;
+            }
+
+            .brand {
+                font-size: 2rem; /* Slightly smaller title for small screens */
+            }
+
+            .tagline {
+                font-size: 1rem;
+            }
+        }
+        /* --- END: RESPONSIVE DESIGN STYLES --- */
     </style>
 </head>
 <body>
@@ -505,12 +551,7 @@ TEMPLATE = '''
                     analyzeBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Password';
                     
                     /* --- THIS IS THE JAVASCRIPT THAT TRIGGERS THE ANIMATION --- */
-                    // 1. Add 'with-result' to the main container. This makes the CSS
-                    //    move the input section to the left.
                     mainContainer.classList.add('with-result');
-                    
-                    // 2. Add 'active' to the result section. This makes the CSS
-                    //    fade in the results on the right.
                     resultSection.classList.add('active');
                     /* --- END OF ANIMATION TRIGGER --- */
 
@@ -554,10 +595,10 @@ TEMPLATE = '''
                 });
             });
             
-            // **IMPROVEMENT**: This part resets the UI if the user clears the input field.
+            // Reset UI if user clears the input
             passwordInput.addEventListener('input', function() {
                 if (passwordInput.value.length === 0) {
-                    // Remove the classes to revert to the initial centered layout
+                    // Remove classes to revert to the initial centered layout
                     mainContainer.classList.remove('with-result');
                     resultSection.classList.remove('active');
                 }

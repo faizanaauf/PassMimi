@@ -14,10 +14,6 @@
    ```bash
    git clone https://github.com/faizanaauf/PassMimi.git
    cd PassMimi
-2. Install dependencies:
    pip install -r requirements.txt
-3. Download wordlists automatically:
    python post_install.py
-4. Run locally:
    python app.py
-   

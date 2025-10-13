@@ -22,8 +22,5 @@ PassMimi is a Flask-based password strength analyzer that checks password comple
 - Build an offline Bloom filter (`passmimi.bloom`) and store that in S3 or a cloud link, or
 - Upload a trimmed/deduplicated subset if you must keep something inside repo.
 
-## License
-Add your license file (e.g. `LICENSE`) and usage terms.
-
 ## Contact
-Add a contact or support section.
+Email: fai_ebook@proton.me

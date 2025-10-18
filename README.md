@@ -23,7 +23,7 @@
 ## Contact Us
 Email: fai_ebook@proton.me
 
-## Screenshot
+## Screenshots
 ![image alt](https://github.com/faizanaauf/PassMimi/blob/d1583b2b7fa104981bd1c0f94b3c05e3588c9a17/Screenshot%20(43).png)
 ![image alt](https://github.com/faizanaauf/PassMimi/blob/49e92f1c2c6e451f28c9197bb5c05c3b516e8a75/Screenshot%20(42).png)
 ![image alt](https://github.com/faizanaauf/PassMimi/blob/d1583b2b7fa104981bd1c0f94b3c05e3588c9a17/Screenshot%20(45).png)

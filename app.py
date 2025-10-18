@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 # ========================== CONFIGURATION ==========================
 LOGO_PATH = "static/logo.png" # It's good practice to put static files in a 'static' folder
-WORDLIST_PATHS = ["wordlists/rockyou.txt", "wordlists/SecLists", "wordlists/Weakpass.txt"]
+WORDLIST_PATHS = ["wordlists/wordlists/rockyou.txt", "wordlists/wordlists/SecLists", "wordlists/wordlists/Weakpass.txt"]
 THEME_COLOR = "#00f7ff"
 PRIMARY_DARK = "#00c4cc"
 SECONDARY_COLOR = "#8a2be2"

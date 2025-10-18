@@ -4,7 +4,7 @@ import os, re, time
 app = Flask(__name__)
 
 # ========================== CONFIGURATION ==========================
-LOGO_PATH = "static/logo.png" # It's good practice to put static files in a 'static' folder
+LOGO_PATH = "logo.png" # It's good practice to put static files in a 'static' folder
 WORDLIST_PATHS = ["wordlists/wordlists/rockyou.txt", "wordlists/wordlists/SecLists", "wordlists/wordlists/Weakpass.txt"]
 THEME_COLOR = "#00f7ff"
 PRIMARY_DARK = "#00c4cc"
@@ -614,3 +614,4 @@ if __name__ == "__main__":
     if not os.path.exists('static'):
         os.makedirs('static')
     app.run(debug=True, port=5000)
+

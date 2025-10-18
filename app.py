@@ -1,10 +1,11 @@
-from flask import Flask, render_template_string, request, jsonify
+from flask import Flask, render_template_string, request, jsonify, send_from_directory # Added send_from_directory
 import os, re, time
 
 app = Flask(__name__)
 
 # ========================== CONFIGURATION ==========================
-LOGO_PATH = "logo.png" # It's good practice to put static files in a 'static' folder
+LOGO_PATH = "logo.png" 
+# CORRECTED PATHS: Removed the extra 'wordlists/' from each path to prevent errors.
 WORDLIST_PATHS = ["wordlists/wordlists/rockyou.txt", "wordlists/wordlists/SecLists", "wordlists/wordlists/Weakpass.txt"]
 THEME_COLOR = "#00f7ff"
 PRIMARY_DARK = "#00c4cc"
@@ -20,6 +21,7 @@ SUCCESS_COLOR = "#23ac5c"
 INFO_COLOR = "#1e90ff"
 
 # ========================== WORDLIST CHECK ==========================
+# This function is unchanged.
 def check_in_wordlists(password):
     found_lists = []
     for path in WORDLIST_PATHS:
@@ -31,7 +33,6 @@ def check_in_wordlists(password):
                     full_path = os.path.join(root, file)
                     try:
                         with open(full_path, "r", encoding="latin-1", errors="ignore") as f:
-                            # Use a more efficient check
                             if f'{password}\n' in f.read():
                                 if "SecLists" not in found_lists:
                                     found_lists.append("SecList") # Simplified for speed
@@ -49,6 +50,7 @@ def check_in_wordlists(password):
     return found_lists
 
 # ========================== EVALUATION LOGIC ==========================
+# This function is unchanged.
 def evaluate_password(password):
     length = len(password)
     has_upper = any(c.isupper() for c in password)
@@ -185,7 +187,6 @@ def index():
     logo_available = os.path.exists(LOGO_PATH)
     return render_template_string(TEMPLATE, 
                                   logo_available=logo_available, 
-                                  logo_path=LOGO_PATH,
                                   theme_color=THEME_COLOR,
                                   primary_dark=PRIMARY_DARK,
                                   secondary_color=SECONDARY_COLOR,
@@ -205,6 +206,11 @@ def check_password():
     time.sleep(1.5)  # Simulate processing time
     result = evaluate_password(password)
     return jsonify(result)
+
+# ADDED: This new route serves the logo file from the current directory.
+@app.route('/logo.png')
+def serve_logo():
+    return send_from_directory('.', 'logo.png')
 
 # ========================== MODERN HTML TEMPLATE ==========================
 TEMPLATE = '''
@@ -332,63 +338,19 @@ TEMPLATE = '''
 
         /* --- START: RESPONSIVE DESIGN STYLES --- */
         @media (max-width: 900px) {
-            .main-container {
-                /* On mobile, use less horizontal padding */
-                padding: 1rem;
-            }
-
-            .main-container.with-result {
-                /* Stack the input and result cards vertically */
-                flex-direction: column;
-                gap: 2rem;
-                justify-content: flex-start;
-                align-items: center;
-                /* Allow page to scroll if content is long */
-                min-height: unset; 
-            }
-
-            .main-container.with-result .center-container,
-            .result-section {
-                /* Make both cards take the full width of the screen */
-                width: 100%;
-            }
-
-            /* The result card animates from the bottom on mobile instead of the side */
-            .result-section {
-                transform: translateY(30px);
-            }
-            .result-section.active {
-                transform: translateY(0);
-            }
-
-            /* Re-center the header text when cards are stacked */
-            .main-container.with-result .header {
-                align-items: center;
-            }
-            .main-container.with-result .brand,
-            .main-container.with-result .tagline {
-                text-align: center;
-            }
+            .main-container { padding: 1rem; }
+            .main-container.with-result { flex-direction: column; gap: 2rem; justify-content: flex-start; align-items: center; min-height: unset;  }
+            .main-container.with-result .center-container, .result-section { width: 100%; }
+            .result-section { transform: translateY(30px); }
+            .result-section.active { transform: translateY(0); }
+            .main-container.with-result .header { align-items: center; }
+            .main-container.with-result .brand, .main-container.with-result .tagline { text-align: center; }
         }
-        
         @media (max-width: 480px) {
-            .input-section, .result-section {
-                /* Reduce padding on very small screens for more space */
-                padding: 1.5rem;
-            }
-
-            .details-grid {
-                /* Stack the detail items in a single column instead of a 2x2 grid */
-                grid-template-columns: 1fr;
-            }
-
-            .brand {
-                font-size: 2rem; /* Slightly smaller title for small screens */
-            }
-
-            .tagline {
-                font-size: 1rem;
-            }
+            .input-section, .result-section { padding: 1.5rem; }
+            .details-grid { grid-template-columns: 1fr; }
+            .brand { font-size: 2rem; }
+            .tagline { font-size: 1rem; }
         }
         /* --- END: RESPONSIVE DESIGN STYLES --- */
     </style>
@@ -399,7 +361,8 @@ TEMPLATE = '''
             <div class="header">
                 {% if logo_available %}
                 <div class="logo-container pulse">
-                    <img src="{{ url_for('static', filename='logo.png') }}" class="logo-img" alt="PassMimi Logo">
+                    <!-- MODIFIED: Image source now points to the custom /logo.png route -->
+                    <img src="/logo.png" class="logo-img" alt="PassMimi Logo">
                 </div>
                 {% endif %}
                 <div>
@@ -410,18 +373,11 @@ TEMPLATE = '''
             
             <div class="input-section">
                 <h2 class="input-title">Check Your Password Strength</h2>
-                
                 <div class="password-input-container">
                     <input type="password" class="password-input" id="password" placeholder="Enter your password">
-                    <button class="toggle-password" id="togglePassword">
-                        <i class="fas fa-eye"></i>
-                    </button>
+                    <button class="toggle-password" id="togglePassword"><i class="fas fa-eye"></i></button>
                 </div>
-                
-                <button class="analyze-btn" id="analyzeBtn">
-                    <i class="fas fa-search"></i> Analyze Password
-                </button>
-                
+                <button class="analyze-btn" id="analyzeBtn"><i class="fas fa-search"></i> Analyze Password</button>
                 <div class="loading-container" id="loadingContainer">
                     <div class="spinner"></div>
                     <div class="loading-text">Analyzing password security...</div>
@@ -431,7 +387,6 @@ TEMPLATE = '''
         
         <div class="result-section" id="resultSection">
             <h2 class="result-title">Password Analysis</h2>
-            
             <div class="strength-display">
                 <div class="strength-circle" id="strengthCircle">
                     <span class="strength-rating" id="strengthRating">0</span>
@@ -442,55 +397,15 @@ TEMPLATE = '''
                     <p id="strengthDescription">Password analysis will appear here</p>
                 </div>
             </div>
-            
             <div class="details-grid">
-                <div class="detail-item">
-                    <div class="detail-icon" style="background: rgba(255, 71, 87, 0.2); color: var(--danger);"><i class="fas fa-font"></i></div>
-                    <div class="detail-info">
-                        <div class="detail-label">Uppercase</div>
-                        <div class="detail-value" id="uppercaseValue">No</div>
-                    </div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-icon" style="background: rgba(255, 165, 2, 0.2); color: var(--warning);"><i class="fas fa-font"></i></div>
-                    <div class="detail-info">
-                        <div class="detail-label">Lowercase</div>
-                        <div class="detail-value" id="lowercaseValue">No</div>
-                    </div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-icon" style="background: rgba(30, 144, 255, 0.2); color: var(--info);"><i class="fas fa-hashtag"></i></div>
-                    <div class="detail-info">
-                        <div class="detail-label">Digits</div>
-                        <div class="detail-value" id="digitsValue">0</div>
-                    </div>
-                </div>
-                
-                <div class="detail-item">
-                    <div class="detail-icon" style="background: rgba(46, 213, 115, 0.2); color: var(--success);"><i class="fas fa-asterisk"></i></div>
-                    <div class="detail-info">
-                        <div class="detail-label">Symbols</div>
-                        <div class="detail-value" id="symbolsValue">0</div>
-                    </div>
-                </div>
+                <div class="detail-item"><div class="detail-icon" style="background: rgba(255, 71, 87, 0.2); color: var(--danger);"><i class="fas fa-font"></i></div><div class="detail-info"><div class="detail-label">Uppercase</div><div class="detail-value" id="uppercaseValue">No</div></div></div>
+                <div class="detail-item"><div class="detail-icon" style="background: rgba(255, 165, 2, 0.2); color: var(--warning);"><i class="fas fa-font"></i></div><div class="detail-info"><div class="detail-label">Lowercase</div><div class="detail-value" id="lowercaseValue">No</div></div></div>
+                <div class="detail-item"><div class="detail-icon" style="background: rgba(30, 144, 255, 0.2); color: var(--info);"><i class="fas fa-hashtag"></i></div><div class="detail-info"><div class="detail-label">Digits</div><div class="detail-value" id="digitsValue">0</div></div></div>
+                <div class="detail-item"><div class="detail-icon" style="background: rgba(46, 213, 115, 0.2); color: var(--success);"><i class="fas fa-asterisk"></i></div><div class="detail-info"><div class="detail-label">Symbols</div><div class="detail-value" id="symbolsValue">0</div></div></div>
             </div>
-            
-            <div class="remark" id="remark">
-                <i class="fas fa-info-circle"></i> Enter a password to analyze its strength
-            </div>
-            
-            <div class="suggestion">
-                <div class="suggestion-title">
-                    <i class="fas fa-lightbulb"></i> Suggestion
-                </div>
-                <div id="suggestionText">Our analyzer will provide personalized suggestions to improve your password security.</div>
-            </div>
-            
-            <div class="footer">
-                <p>Wordlists used: rockyou.txt, SecLists, Weakpass</p>
-            </div>
+            <div class="remark" id="remark"><i class="fas fa-info-circle"></i> Enter a password to analyze its strength</div>
+            <div class="suggestion"><div class="suggestion-title"><i class="fas fa-lightbulb"></i> Suggestion</div><div id="suggestionText">Our analyzer will provide personalized suggestions to improve your password security.</div></div>
+            <div class="footer"><p>Wordlists used: rockyou.txt, SecLists, Weakpass</p></div>
         </div>
     </div>
 
@@ -513,80 +428,53 @@ TEMPLATE = '''
             const symbolsValue = document.getElementById('symbolsValue');
             const remark = document.getElementById('remark');
             const suggestionText = document.getElementById('suggestionText');
-            
-            // Toggle password visibility
             togglePassword.addEventListener('click', function() {
                 const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
                 passwordInput.setAttribute('type', type);
                 togglePassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
             });
-            
-            // Analyze password
             analyzeBtn.addEventListener('click', function() {
                 const password = passwordInput.value;
-                
                 if (!password) {
                     remark.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please enter a password to analyze';
                     return;
                 }
-                
-                // Disable the analyze button and show loading
                 analyzeBtn.disabled = true;
                 analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
                 loadingContainer.style.display = 'flex';
-                
-                // Send request to server
                 fetch("/check", {
                     method: "POST", 
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
                     body: new URLSearchParams({password: password})
                 })
                 .then(r => r.json())
                 .then(d => {
-                    // Hide loading and re-enable button
                     loadingContainer.style.display = 'none';
                     analyzeBtn.disabled = false;
                     analyzeBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Password';
-                    
-                    /* --- THIS IS THE JAVASCRIPT THAT TRIGGERS THE ANIMATION --- */
                     mainContainer.classList.add('with-result');
                     resultSection.classList.add('active');
-                    /* --- END OF ANIMATION TRIGGER --- */
-
-                    // Update detail values
                     uppercaseValue.textContent = d.details.Uppercase ? 'Yes' : 'No';
                     uppercaseValue.style.color = d.details.Uppercase ? 'var(--success)' : 'var(--danger)';
-                    
                     lowercaseValue.textContent = d.details.Lowercase ? 'Yes' : 'No';
                     lowercaseValue.style.color = d.details.Lowercase ? 'var(--success)' : 'var(--danger)';
-                    
                     digitsValue.textContent = d.details.Digits ? 'Yes' : 'No';
                     digitsValue.style.color = d.details.Digits ? 'var(--success)' : 'var(--danger)';
-                    
                     symbolsValue.textContent = d.details.Symbols;
                     symbolsValue.style.color = d.details.Symbols > 0 ? 'var(--success)' : 'var(--danger)';
-                    
-                    // Update strength display
                     strengthRating.textContent = d.rating;
                     strengthText.textContent = "/10";
                     strengthLabel.textContent = d.strength;
                     strengthDescription.textContent = d.remark;
                     strengthCircle.style.background = `conic-gradient(${d.circle_color} 0%, ${d.circle_color} ${d.rating * 10}%, var(--surface-light) ${d.rating * 10}%, var(--surface-light) 100%)`;
                     strengthCircle.classList.add('pulse');
-                    
-                    // Update remark and suggestion
                     remark.innerHTML = `<i class="fas fa-info-circle"></i> ${d.remark}`;
                     suggestionText.textContent = d.suggestion;
-                    
-                    // Remove pulse animation after 3 seconds
                     setTimeout(() => {
                         strengthCircle.classList.remove('pulse');
                     }, 3000);
                 })
                 .catch(error => {
-                    // Hide loading and re-enable button on error
                     loadingContainer.style.display = 'none';
                     analyzeBtn.disabled = false;
                     analyzeBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Password';
@@ -594,11 +482,8 @@ TEMPLATE = '''
                     console.error('Error:', error);
                 });
             });
-            
-            // Reset UI if user clears the input
             passwordInput.addEventListener('input', function() {
                 if (passwordInput.value.length === 0) {
-                    // Remove classes to revert to the initial centered layout
                     mainContainer.classList.remove('with-result');
                     resultSection.classList.remove('active');
                 }
@@ -609,10 +494,12 @@ TEMPLATE = '''
 </html>
 '''
 
+# MODIFIED: Removed all logic for the 'static' folder.
 if __name__ == "__main__":
-    # Ensure the 'static' directory exists for the logo
-    if not os.path.exists('static'):
-        os.makedirs('static')
+    # Ensure the 'wordlists' directory exists, as it's still needed.
+    wordlists_dir = 'wordlists'
+    if not os.path.exists(wordlists_dir):
+        os.makedirs(wordlists_dir)
+        print(f"INFO: Created directory '{wordlists_dir}'. Please add your wordlist files here.")
+        
     app.run(debug=True, port=5000)
-
-

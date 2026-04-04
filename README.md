@@ -1,7 +1,7 @@
 # PassMimi 🔐
 ![image alt](https://github.com/faizanaauf/PassMimi/blob/bdb1d1a829f53ee30ade6051ab4838ce584da778/16fcf2b2-a0d3-4604-89ba-a32266fec153_removalai_preview.png)
 
-**PassMimi** is a modern Password analyzer that evaluates password strength, detects exposure in known wordlists, and gives improvement suggestions.
+**PassMimi** is a modern password analyzer that evaluates password strength, detects exposure in known wordlists, and gives improvement suggestions. By eliminating predictable patterns, it helps you build passwords with an extreme high resistance to cracking—effectively defeating the vast majority of standard hacker attacks.
 
 
 ## 🚀 Features

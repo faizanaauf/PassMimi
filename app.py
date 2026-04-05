@@ -1,12 +1,22 @@
-from flask import Flask, render_template_string, request, jsonify, send_from_directory # Added send_from_directory
-import os, re, time
+from flask import Flask, render_template_string, request, jsonify
+import os, re, time, sys
+import webview
 
-app = Flask(__name__)
+# Location awareness for PyInstaller portable wrapper
+if getattr(sys, 'frozen', False):
+    basedir = sys._MEIPASS
+else:
+    basedir = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(__name__, static_folder=os.path.join(basedir, "static"))
 
 # ========================== CONFIGURATION ==========================
-LOGO_PATH = "logo.png" 
-# CORRECTED PATHS: Removed the extra 'wordlists/' from each path to prevent errors.
-WORDLIST_PATHS = ["wordlists/wordlists/rockyou.txt", "wordlists/wordlists/SecLists", "wordlists/wordlists/Weakpass.txt"]
+LOGO_PATH = os.path.join(basedir, "static", "logo.png")
+WORDLIST_PATHS = [
+    os.path.join(basedir, "wordlists", "rockyou.txt"),
+    os.path.join(basedir, "wordlists", "SecLists"),
+    os.path.join(basedir, "wordlists", "Weakpass.txt")
+]
 THEME_COLOR = "#00f7ff"
 PRIMARY_DARK = "#00c4cc"
 SECONDARY_COLOR = "#8a2be2"
@@ -21,7 +31,6 @@ SUCCESS_COLOR = "#23ac5c"
 INFO_COLOR = "#1e90ff"
 
 # ========================== WORDLIST CHECK ==========================
-# This function is unchanged.
 def check_in_wordlists(password):
     found_lists = []
     for path in WORDLIST_PATHS:
@@ -33,6 +42,7 @@ def check_in_wordlists(password):
                     full_path = os.path.join(root, file)
                     try:
                         with open(full_path, "r", encoding="latin-1", errors="ignore") as f:
+                            # Use a more efficient check
                             if f'{password}\n' in f.read():
                                 if "SecLists" not in found_lists:
                                     found_lists.append("SecList") # Simplified for speed
@@ -50,7 +60,6 @@ def check_in_wordlists(password):
     return found_lists
 
 # ========================== EVALUATION LOGIC ==========================
-# This function is unchanged.
 def evaluate_password(password):
     length = len(password)
     has_upper = any(c.isupper() for c in password)
@@ -130,6 +139,24 @@ def evaluate_password(password):
             "suggestion": "Add uppercase letters and special symbols to increase strength."
         }
     
+    # Rule 5: 22 to 30+ with symbols (at least 3) and uppercase (at least 2) and numbers (at least 3)
+    # Checked before Rule 4 to ensure the strictest condition isn't skipped by overlapping length constraints
+    elif length >= 22 and symbol_count >= 3 and upper_count >= 2 and digit_count >= 3:
+        return {
+            "rating": 10, 
+            "strength": "Very Strong", 
+            "circle_color": THEME_COLOR,
+            "remark": "Excellent password security!", 
+            "details": {
+                "Uppercase": has_upper, 
+                "Lowercase": has_lower, 
+                "Digits": has_digit, 
+                "Symbols": symbol_count,
+                "Length": length
+            },
+            "suggestion": "Perfect! This password meets all security criteria."
+        }
+        
     # Rule 4: 18 to 25 with symbol and uppercase (and at least 3 numbers)
     elif 18 <= length <= 25 and has_upper and symbol_count >= 1 and digit_count >= 3:
         return {
@@ -147,30 +174,13 @@ def evaluate_password(password):
             "suggestion": "Excellent password! Consider making it longer for even better security."
         }
     
-    # Rule 5: 22 to 30+ with symbols (at least 3) and uppercase (at least 2) and numbers (at least 3)
-    elif length >= 22 and symbol_count >= 3 and upper_count >= 2 and digit_count >= 3:
-        return {
-            "rating": 10, 
-            "strength": "Very Strong", 
-            "circle_color": THEME_COLOR,
-            "remark": "Excellent password security!", 
-            "details": {
-                "Uppercase": has_upper, 
-                "Lowercase": has_lower, 
-                "Digits": has_digit, 
-                "Symbols": symbol_count,
-                "Length": length
-            },
-            "suggestion": "Perfect! This password meets all security criteria."
-        }
-    
     # Default case for passwords that don't match specific rules
     else:
         return {
-            "rating": 4, 
-            "strength": "Average", 
-            "circle_color": "#ffff00",
-            "remark": "Password could be stronger", 
+            "rating": 6, 
+            "strength": "Good", 
+            "circle_color": "#00ffcc",
+            "remark": "Password is good but could be stronger", 
             "details": {
                 "Uppercase": has_upper, 
                 "Lowercase": has_lower, 
@@ -187,6 +197,7 @@ def index():
     logo_available = os.path.exists(LOGO_PATH)
     return render_template_string(TEMPLATE, 
                                   logo_available=logo_available, 
+                                  logo_path=LOGO_PATH,
                                   theme_color=THEME_COLOR,
                                   primary_dark=PRIMARY_DARK,
                                   secondary_color=SECONDARY_COLOR,
@@ -205,12 +216,33 @@ def check_password():
     password = request.form.get("password", "")
     time.sleep(1.5)  # Simulate processing time
     result = evaluate_password(password)
+    
+    length = len(password)
+    has_upper = any(c.isupper() for c in password)
+    has_lower = any(c.islower() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    symbol_count = len(re.findall(r"[!@#$%^&*(),.?\":{}|<>]", password))
+    
+    if result.get("rating") == 1 and "wordlists" in result.get("remark", "").lower():
+        result["crack_time"] = "Instantly"
+    else:
+        pool = 0
+        if has_lower: pool += 26
+        if has_upper: pool += 26
+        if has_digit: pool += 10
+        if symbol_count > 0: pool += 32
+        if pool == 0: pool = 26
+        combinations = pool ** length
+        seconds = combinations / 100_000_000_000
+        if length == 0 or seconds < 1: result["crack_time"] = "Instantly"
+        elif seconds < 60: result["crack_time"] = f"{int(seconds)} Secs"
+        elif seconds < 3600: result["crack_time"] = f"{int(seconds/60)} Mins"
+        elif seconds < 86400: result["crack_time"] = f"{int(seconds/3600)} Hours"
+        elif seconds < 31536000: result["crack_time"] = f"{int(seconds/86400)} Days"
+        elif seconds < 3153600000: result["crack_time"] = f"{int(seconds/31536000)} Yrs"
+        else: result["crack_time"] = "100+ Years"
+        
     return jsonify(result)
-
-# ADDED: This new route serves the logo file from the current directory.
-@app.route('/logo.png')
-def serve_logo():
-    return send_from_directory('.', 'logo.png')
 
 # ========================== MODERN HTML TEMPLATE ==========================
 TEMPLATE = '''
@@ -219,8 +251,10 @@ TEMPLATE = '''
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PassMimi | Advanced Password Analyzer</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>PassMimi - Advanced Password Security Analyzer</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: {{ theme_color }};
@@ -241,26 +275,37 @@ TEMPLATE = '''
             background: var(--background);
             color: var(--text);
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             overflow-x: hidden;
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(0, 247, 255, 0.05) 0%, transparent 20%),
                 radial-gradient(circle at 90% 80%, rgba(138, 43, 226, 0.05) 0%, transparent 20%);
         }
 
+        .ambient-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.3; z-index: 0; animation: float 15s infinite ease-in-out alternate; }
+        .orb-1 { width: 300px; height: 300px; background: var(--primary); top: 10%; left: 5%; }
+        .orb-2 { width: 400px; height: 400px; background: var(--secondary); bottom: 5%; right: 5%; animation-duration: 20s; }
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(40px, 40px) scale(1.1); } }
+
         .main-container {
             display: flex;
+            flex-direction: row;
             justify-content: center; 
             align-items: center;
-            min-height: 100vh;
-            transition: all 0.5s ease; 
+            width: 100%;
+            max-width: 600px;
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); 
             padding: 2rem;
             position: relative;
+            z-index: 10;
         }
 
         .main-container.with-result {
-            justify-content: space-between; 
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 1100px;
+            gap: 3rem;
+            align-items: stretch;
         }
 
         .center-container {
@@ -269,25 +314,22 @@ TEMPLATE = '''
             align-items: center;
             justify-content: center;
             text-align: center;
-            transition: all 0.5s ease;
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
             width: 100%;
-            max-width: 500px; /* Set max-width here for initial state */
+            max-width: 500px;
         }
-        .main-container.with-result .center-container {
-            align-items: flex-start;
-            text-align: left;
-            width: 45%; /* It takes the left 45% of the screen */
-            max-width: 500px; /* Maintain max-width */
-        }
-        .header { display: flex; flex-direction: column; align-items: center; margin-bottom: 2rem; gap: 1rem; }
+        .main-container.with-result .center-container { align-items: flex-start; text-align: left; }
+        
+        .header { display: flex; flex-direction: column; align-items: center; margin-bottom: 2rem; gap: 1rem; transition: all 0.5s ease; }
         .main-container.with-result .header { align-items: flex-start; }
+        .main-container.with-result .brand { font-size: 2.2rem; text-align: left; }
+        .main-container.with-result .tagline { text-align: left; }
         .logo-container { width: 120px; height: 120px; border-radius: 20px; display: flex; align-items: center; justify-content: center; background: var(--surface); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px; }
         .logo-img { max-width: 100%; max-height: 100%; border-radius: 15px; }
         .brand { font-size: 2.5rem; font-weight: 700; background: linear-gradient(90deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; color: transparent; text-align: center; }
-        .main-container.with-result .brand { font-size: 2rem; text-align: left; }
         .tagline { color: var(--text-secondary); margin-top: 0.5rem; font-size: 1.1rem; text-align: center; }
-        .main-container.with-result .tagline { text-align: left; }
         .input-section { background: var(--surface); border-radius: 20px; padding: 2.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); position: relative; overflow: hidden; width: 100%; transition: all 0.5s ease; }
+        .input-section:hover { box-shadow: 0 15px 40px rgba(0, 247, 255, 0.15); border: 1px solid rgba(0, 247, 255, 0.2); transform: translateY(-3px); }
         .input-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary)); }
         .input-title { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--text); text-align: center; }
         .password-input-container { position: relative; margin-bottom: 1.5rem; }
@@ -306,16 +348,22 @@ TEMPLATE = '''
         @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
         
         .result-section {
-            background: var(--surface); border-radius: 20px; padding: 2.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05);
+            background: var(--surface); border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05);
             opacity: 0;
+            width: 0;
+            padding: 0;
             transform: translateX(50px);
-            transition: all 0.5s ease;
-            position: relative; overflow: hidden; width: 45%; max-width: 500px;
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
         }
         .result-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary)); }
         
         .result-section.active {
             opacity: 1;
+            width: 100%;
+            max-width: 500px;
+            padding: 2.5rem;
             transform: translateX(0);
         }
 
@@ -338,31 +386,43 @@ TEMPLATE = '''
 
         /* --- START: RESPONSIVE DESIGN STYLES --- */
         @media (max-width: 900px) {
-            .main-container { padding: 1rem; }
-            .main-container.with-result { flex-direction: column; gap: 2rem; justify-content: flex-start; align-items: center; min-height: unset;  }
-            .main-container.with-result .center-container, .result-section { width: 100%; }
-            .result-section { transform: translateY(30px); }
-            .result-section.active { transform: translateY(0); }
-            .main-container.with-result .header { align-items: center; }
-            .main-container.with-result .brand, .main-container.with-result .tagline { text-align: center; }
+            .main-container {
+                /* On mobile, use less horizontal padding */
+                padding: 1rem;
+            }
         }
+        
         @media (max-width: 480px) {
-            .input-section, .result-section { padding: 1.5rem; }
-            .details-grid { grid-template-columns: 1fr; }
-            .brand { font-size: 2rem; }
-            .tagline { font-size: 1rem; }
+            .input-section, .result-section {
+                /* Reduce padding on very small screens for more space */
+                padding: 1.5rem;
+            }
+
+            .details-grid {
+                /* Stack the detail items in a single column instead of a 2x2 grid */
+                grid-template-columns: 1fr;
+            }
+
+            .brand {
+                font-size: 2rem; /* Slightly smaller title for small screens */
+            }
+
+            .tagline {
+                font-size: 1rem;
+            }
         }
         /* --- END: RESPONSIVE DESIGN STYLES --- */
     </style>
 </head>
 <body>
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
     <div class="main-container" id="mainContainer">
         <div class="center-container">
             <div class="header">
                 {% if logo_available %}
                 <div class="logo-container pulse">
-                    <!-- MODIFIED: Image source now points to the custom /logo.png route -->
-                    <img src="/logo.png" class="logo-img" alt="PassMimi Logo">
+                    <img src="{{ url_for('static', filename='logo.png') }}" class="logo-img" alt="PassMimi Logo">
                 </div>
                 {% endif %}
                 <div>
@@ -373,11 +433,18 @@ TEMPLATE = '''
             
             <div class="input-section">
                 <h2 class="input-title">Check Your Password Strength</h2>
+                
                 <div class="password-input-container">
                     <input type="password" class="password-input" id="password" placeholder="Enter your password">
-                    <button class="toggle-password" id="togglePassword"><i class="fas fa-eye"></i></button>
+                    <button class="toggle-password" id="togglePassword">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
-                <button class="analyze-btn" id="analyzeBtn"><i class="fas fa-search"></i> Analyze Password</button>
+                
+                <button class="analyze-btn" id="analyzeBtn">
+                    <i class="fas fa-search"></i> Analyze Password
+                </button>
+                
                 <div class="loading-container" id="loadingContainer">
                     <div class="spinner"></div>
                     <div class="loading-text">Analyzing password security...</div>
@@ -387,6 +454,7 @@ TEMPLATE = '''
         
         <div class="result-section" id="resultSection">
             <h2 class="result-title">Password Analysis</h2>
+            
             <div class="strength-display">
                 <div class="strength-circle" id="strengthCircle">
                     <span class="strength-rating" id="strengthRating">0</span>
@@ -397,15 +465,63 @@ TEMPLATE = '''
                     <p id="strengthDescription">Password analysis will appear here</p>
                 </div>
             </div>
+            
             <div class="details-grid">
-                <div class="detail-item"><div class="detail-icon" style="background: rgba(255, 71, 87, 0.2); color: var(--danger);"><i class="fas fa-font"></i></div><div class="detail-info"><div class="detail-label">Uppercase</div><div class="detail-value" id="uppercaseValue">No</div></div></div>
-                <div class="detail-item"><div class="detail-icon" style="background: rgba(255, 165, 2, 0.2); color: var(--warning);"><i class="fas fa-font"></i></div><div class="detail-info"><div class="detail-label">Lowercase</div><div class="detail-value" id="lowercaseValue">No</div></div></div>
-                <div class="detail-item"><div class="detail-icon" style="background: rgba(30, 144, 255, 0.2); color: var(--info);"><i class="fas fa-hashtag"></i></div><div class="detail-info"><div class="detail-label">Digits</div><div class="detail-value" id="digitsValue">0</div></div></div>
-                <div class="detail-item"><div class="detail-icon" style="background: rgba(46, 213, 115, 0.2); color: var(--success);"><i class="fas fa-asterisk"></i></div><div class="detail-info"><div class="detail-label">Symbols</div><div class="detail-value" id="symbolsValue">0</div></div></div>
+                <div class="detail-item tooltip-container" style="grid-column: span 2;">
+                    <div class="detail-icon" style="background: rgba(138, 43, 226, 0.2); color: var(--secondary);"><i class="fas fa-clock"></i></div>
+                    <div class="detail-info">
+                        <div class="detail-label">Est. Crack Time</div>
+                        <div class="detail-value" id="crackTimeValue" style="color: var(--secondary);">Calculating...</div>
+                    </div>
+                </div>
+            
+                <div class="detail-item">
+                    <div class="detail-icon" style="background: rgba(255, 71, 87, 0.2); color: var(--danger);"><i class="fas fa-font"></i></div>
+                    <div class="detail-info">
+                        <div class="detail-label">Uppercase</div>
+                        <div class="detail-value" id="uppercaseValue">No</div>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-icon" style="background: rgba(255, 165, 2, 0.2); color: var(--warning);"><i class="fas fa-font"></i></div>
+                    <div class="detail-info">
+                        <div class="detail-label">Lowercase</div>
+                        <div class="detail-value" id="lowercaseValue">No</div>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-icon" style="background: rgba(30, 144, 255, 0.2); color: var(--info);"><i class="fas fa-hashtag"></i></div>
+                    <div class="detail-info">
+                        <div class="detail-label">Digits</div>
+                        <div class="detail-value" id="digitsValue">0</div>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-icon" style="background: rgba(46, 213, 115, 0.2); color: var(--success);"><i class="fas fa-asterisk"></i></div>
+                    <div class="detail-info">
+                        <div class="detail-label">Symbols</div>
+                        <div class="detail-value" id="symbolsValue">0</div>
+                    </div>
+                </div>
             </div>
-            <div class="remark" id="remark"><i class="fas fa-info-circle"></i> Enter a password to analyze its strength</div>
-            <div class="suggestion"><div class="suggestion-title"><i class="fas fa-lightbulb"></i> Suggestion</div><div id="suggestionText">Our analyzer will provide personalized suggestions to improve your password security.</div></div>
-            <div class="footer"><p>Wordlists used: rockyou.txt, SecLists, Weakpass</p></div>
+            
+            <div class="remark" id="remark">
+                <i class="fas fa-info-circle"></i> Enter a password to analyze its strength
+            </div>
+            
+            <div class="suggestion">
+                <div class="suggestion-title">
+                    <i class="fas fa-lightbulb"></i> Suggestion
+                </div>
+                <div id="suggestionText">Our analyzer will provide personalized suggestions to improve your password security.</div>
+            </div>
+            
+            <div class="footer">
+                <p>Wordlists used: rockyou.txt, SecLists, Weakpass</p>
+            </div>
         </div>
     </div>
 
@@ -428,53 +544,81 @@ TEMPLATE = '''
             const symbolsValue = document.getElementById('symbolsValue');
             const remark = document.getElementById('remark');
             const suggestionText = document.getElementById('suggestionText');
+            
+            // Toggle password visibility
             togglePassword.addEventListener('click', function() {
                 const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
                 passwordInput.setAttribute('type', type);
                 togglePassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
             });
+            
+            // Analyze password
             analyzeBtn.addEventListener('click', function() {
                 const password = passwordInput.value;
+                
                 if (!password) {
                     remark.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please enter a password to analyze';
                     return;
                 }
+                
+                // Disable the analyze button and show loading
                 analyzeBtn.disabled = true;
                 analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
                 loadingContainer.style.display = 'flex';
+                
+                // Send request to server
                 fetch("/check", {
                     method: "POST", 
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
                     body: new URLSearchParams({password: password})
                 })
                 .then(r => r.json())
                 .then(d => {
+                    // Hide loading and re-enable button
                     loadingContainer.style.display = 'none';
                     analyzeBtn.disabled = false;
                     analyzeBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Password';
+                    
+                    /* --- THIS IS THE JAVASCRIPT THAT TRIGGERS THE ANIMATION --- */
                     mainContainer.classList.add('with-result');
                     resultSection.classList.add('active');
+                    /* --- END OF ANIMATION TRIGGER --- */
+
+                    // Update detail values
+                    document.getElementById('crackTimeValue').textContent = d.crack_time;
                     uppercaseValue.textContent = d.details.Uppercase ? 'Yes' : 'No';
                     uppercaseValue.style.color = d.details.Uppercase ? 'var(--success)' : 'var(--danger)';
+                    
                     lowercaseValue.textContent = d.details.Lowercase ? 'Yes' : 'No';
                     lowercaseValue.style.color = d.details.Lowercase ? 'var(--success)' : 'var(--danger)';
+                    
                     digitsValue.textContent = d.details.Digits ? 'Yes' : 'No';
                     digitsValue.style.color = d.details.Digits ? 'var(--success)' : 'var(--danger)';
+                    
                     symbolsValue.textContent = d.details.Symbols;
                     symbolsValue.style.color = d.details.Symbols > 0 ? 'var(--success)' : 'var(--danger)';
+                    
+                    // Update strength display
                     strengthRating.textContent = d.rating;
                     strengthText.textContent = "/10";
                     strengthLabel.textContent = d.strength;
                     strengthDescription.textContent = d.remark;
                     strengthCircle.style.background = `conic-gradient(${d.circle_color} 0%, ${d.circle_color} ${d.rating * 10}%, var(--surface-light) ${d.rating * 10}%, var(--surface-light) 100%)`;
                     strengthCircle.classList.add('pulse');
+                    
+                    // Update remark and suggestion
                     remark.innerHTML = `<i class="fas fa-info-circle"></i> ${d.remark}`;
                     suggestionText.textContent = d.suggestion;
+                    
+                    // Remove pulse animation after 3 seconds
                     setTimeout(() => {
                         strengthCircle.classList.remove('pulse');
                     }, 3000);
                 })
                 .catch(error => {
+                    // Hide loading and re-enable button on error
                     loadingContainer.style.display = 'none';
                     analyzeBtn.disabled = false;
                     analyzeBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Password';
@@ -482,8 +626,11 @@ TEMPLATE = '''
                     console.error('Error:', error);
                 });
             });
+            
+            // Reset UI if user clears the input
             passwordInput.addEventListener('input', function() {
                 if (passwordInput.value.length === 0) {
+                    // Remove classes to revert to the initial centered layout
                     mainContainer.classList.remove('with-result');
                     resultSection.classList.remove('active');
                 }
@@ -494,12 +641,13 @@ TEMPLATE = '''
 </html>
 '''
 
-# MODIFIED: Removed all logic for the 'static' folder.
+def start_webview():
+    webview.create_window('PassMimi Software', app, width=1200, height=800, icon=os.path.join(basedir, "static", "favicon.ico"))
+    webview.start()
+
 if __name__ == "__main__":
-    # Ensure the 'wordlists' directory exists, as it's still needed.
-    wordlists_dir = 'wordlists'
-    if not os.path.exists(wordlists_dir):
-        os.makedirs(wordlists_dir)
-        print(f"INFO: Created directory '{wordlists_dir}'. Please add your wordlist files here.")
-        
-    app.run(debug=True, port=5000)
+    # Ensure the 'static' directory exists for the logo
+    static_dir = os.path.join(basedir, 'static')
+    if not os.path.exists(static_dir):
+        os.makedirs(static_dir)
+    start_webview()

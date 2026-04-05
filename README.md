@@ -54,20 +54,21 @@ If you want to run the software directly from the source code on either Windows 
 Installation Commands
 Run these commands in your terminal to clone the repository, install dependencies, and start the application:
 
-Bash
+```bash
 git clone [https://github.com/faizanaauf/PassMimi.git](https://github.com/faizanaauf/PassMimi.git)
 cd PassMimi
 pip install -r requirements.txt
 python post_install.py
 python app.py
-📦 Compiling to a Standalone Executable (For Developers)
+```
+## 📦 Compiling to a Standalone Executable (For Developers)
 PassMimi is optimized for PyInstaller. If you modify the open-source code and want to compile your own .exe, run:
 
-Bash
+```bash
 pip install pyinstaller
 pyinstaller --noconsole --onefile --add-data "static;static" --add-data "wordlists;wordlists" app.py
 (Note: If compiling on Linux, change the semicolons ; in the --add-data flags to colons :). The final application will be generated in the dist/ folder.
-
+```
 ## 📸 Screenshots
 ![image alt](https://github.com/faizanaauf/PassMimi/blob/main/Screenshot%20(234).png)
 

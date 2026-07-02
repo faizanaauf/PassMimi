@@ -1,79 +1,327 @@
-<div align="center">
-  <img src="https://github.com/faizanaauf/PassMimi/blob/bdb1d1a829f53ee30ade6051ab4838ce584da778/16fcf2b2-a0d3-4604-89ba-a32266fec153_removalai_preview.png" alt="PassMimi Logo" width="250"/>
+# PassMimi
 
-  # PassMimi 🔐
-</div>
+<p align="center">
+  <img src="https://github.com/faizanaauf/PassMimi/blob/bdb1d1a829f53ee30ade6051ab4838ce584da778/16fcf2b2-a0d3-4604-89ba-a32266fec153_removalai_preview.png" alt="PassMimi Logo" width="180">
+</p>
 
-## 🛡️ Defeats 90% of Standard Hacker Attacks
+<h3 align="center">
+Privacy-First Open Source Password Security Analyzer
+</h3>
 
-PassMimi ensures 90% of hackers are not able to crack your passwords. This open-source Linux and Windows tool checks major wordlists like RockYou and Seclists to rate password strength from extreme low to extreme high. It provides real-time visual feedback to help you build secure passwords, and the full source code is available right here on GitHub.
+<p align="center">
+Analyze password strength, detect leaked passwords using real-world breach datasets, and improve password security without sending your data to the cloud.
+</p>
 
----
+<p align="center">
 
-## ✨ Core Features
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue)
 
-* **Advanced Strength Scoring:** Evaluates character variety, length, and structural integrity.
-* **Major Breach Detection:** Cross-references your inputs against massive, real-world databases including `rockyou.txt` and `SecLists`.
-* **Automated Setup:** Auto-fetches and extracts large wordlists from the cloud upon initial setup.
-* **Modern GUI:** A clean, visually striking interface featuring smooth, animated feedback for a premium user experience.
-* **Cross-Platform:** Runs seamlessly on both Windows and Linux environments.
+![Python](https://img.shields.io/badge/Python-3.10%2B-yellow)
 
----
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## 📊 Security & Performance Matrix
+![Status](https://img.shields.io/badge/Status-Active-success)
 
-| Metric | Rating | Detail |
-| :--- | :--- | :--- |
-| **Cracking Resistance** | **Extreme High** | Eliminates predictable patterns targeted by dictionary and brute-force attacks. |
-| **Setup Complexity** | **Very Low** | Automated cloud-fetching handles wordlist configuration. |
-| **Interface Friction** | **Very Low** | Clean, animated GUI provides instant visual feedback. |
+</p>
 
 ---
 
-## 🪟 Windows Quick Start (Pre-compiled .exe)
+## 🔒 What is PassMimi?
 
-If you are on Windows and just want to use the software without touching any code, use the standalone executable:
+PassMimi is an open-source password security analyzer designed to help individuals, developers, and organizations identify weak or compromised passwords before they are used.
 
-1. Navigate to the **Releases** section on the right side of this GitHub page.
-2. Download the latest `PassMimi.exe` file.
-3. Double-click the downloaded file to run the program immediately (no installation required).
-*Note: On the first launch, the software will automatically download the required wordlists in the background.*
+Unlike traditional password strength meters that only evaluate length and character complexity, PassMimi also checks passwords against well-known password breach datasets used in real-world security research.
+
+All password analysis runs locally on your computer. Your passwords are never uploaded or shared with external servers.
 
 ---
 
-## 🛠️ Setup & Installation (Open Source Code)
+# ✨ Features
 
-If you want to run the software directly from the source code on either Windows or Linux, follow these steps.
+## ✅ Local Password Analysis
 
-### Prerequisites
-* **Windows & Linux:** Python 3.x installed (ensure Python is added to your system PATH).
-* **Linux Users Only:** PyWebView requires system web dependencies to render the UI. On Debian/Ubuntu-based systems, run this first:
-  ```bash
-  sudo apt update
-  sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.0
-Installation Commands
-Run these commands in your terminal to clone the repository, install dependencies, and start the application:
+Every password is analyzed completely offline to protect user privacy.
+
+- No cloud processing
+- No account required
+- No password storage
+- No telemetry
+
+---
+
+## ✅ Breached Password Detection
+
+PassMimi checks passwords against popular security datasets including:
+
+- RockYou
+- SecLists
+- Weakpass
+
+If a password exists in these datasets, PassMimi immediately warns the user that the password has previously appeared in known password collections.
+
+---
+
+## ✅ Password Strength Analysis
+
+PassMimi evaluates multiple security factors, including:
+
+- Password length
+- Uppercase letters
+- Lowercase letters
+- Numbers
+- Symbols
+- Password structure
+- Dictionary exposure
+
+The result is an easy-to-understand security score with recommendations for improvement.
+
+---
+
+## ✅ Estimated Crack Time
+
+PassMimi estimates how long an offline brute-force attack may take based on password complexity and character diversity.
+
+This helps users better understand the practical strength of their passwords.
+
+---
+
+## ✅ Cross Platform
+
+PassMimi supports:
+
+- Windows
+- Linux
+
+The project can be executed directly from source or downloaded as a standalone executable for Windows.
+
+---
+
+---
+
+# 📸 Screenshots
+
+PassMimi features a modern desktop interface designed to provide clear, real-time password security analysis while maintaining a simple user experience.
+
+### Home Screen
+
+![PassMimi Home Screen](https://github.com/faizanaauf/PassMimi/blob/main/Screenshot%20(234).png)
+
+### Password Analysis
+
+![PassMimi Password Security Analysis](https://github.com/faizanaauf/PassMimi/blob/main/Screenshot%20(235).png)
+
+### Password Strength Report
+
+![PassMimi Password Report](https://github.com/faizanaauf/PassMimi/blob/main/Screenshot%20(236).png)
+
+
+---
+
+# 🚀 Installation
+
+## Windows
+
+1. Download the latest executable from **Releases**.
+2. Run `PassMimi.exe`.
+3. On first launch, PassMimi automatically downloads the required security wordlists.
+
+No installation is required.
+
+---
+
+## Linux & Source Installation
 
 ```bash
-git clone [https://github.com/faizanaauf/PassMimi.git](https://github.com/faizanaauf/PassMimi.git)
+git clone https://github.com/faizanaauf/PassMimi.git
+
 cd PassMimi
+
 pip install -r requirements.txt
+
 python post_install.py
+
 python app.py
 ```
-## 📦 Compiling to a Standalone Executable (For Developers)
-PassMimi is optimized for PyInstaller. If you modify the open-source code and want to compile your own .exe, run:
 
-```bash
-pip install pyinstaller
-pyinstaller --noconsole --onefile --add-data "static;static" --add-data "wordlists;wordlists" app.py
-(Note: If compiling on Linux, change the semicolons ; in the --add-data flags to colons :). The final application will be generated in the dist/ folder.
+---
+
+# ⚡ Technology Stack
+
+- Python
+- Flask
+- PyWebView
+- HTML
+- CSS
+- JavaScript
+
+---
+
+# 🛡️ How PassMimi Works
+
+PassMimi combines password policy analysis with real-world breach detection to provide a more meaningful security assessment.
+
+When a password is entered, PassMimi:
+
+1. Analyzes password length and complexity.
+2. Checks uppercase, lowercase, numbers, and symbols.
+3. Searches local breach datasets such as RockYou, SecLists, and Weakpass.
+4. Estimates offline brute-force crack time.
+5. Generates a security score with actionable recommendations.
+
+Because every operation runs locally, passwords never leave your computer.
+
+---
+
+# 🔐 Privacy First
+
+Privacy is a core design principle of PassMimi.
+
+- ✅ No cloud processing
+- ✅ No password uploads
+- ✅ No user tracking
+- ✅ No analytics
+- ✅ No account required
+- ✅ Works completely offline after initial setup
+
+Your passwords remain under your control at all times.
+
+---
+
+# 🏗️ Project Structure
+
+```text
+PassMimi/
+├── app.py
+├── post_install.py
+├── requirements.txt
+├── static/
+├── wordlists/
+├── screenshots/
+└── README.md
 ```
-## 📸 Screenshots
-![image alt](https://github.com/faizanaauf/PassMimi/blob/main/Screenshot%20(234).png)
 
-![image alt](https://github.com/faizanaauf/PassMimi/blob/main/Screenshot%20(235).png)
+---
 
-![image alt](https://github.com/faizanaauf/PassMimi/blob/main/Screenshot%20(236).png)
-## 📬 Contact Us
-Email: fai_ebook@proton.me
+# 📊 Security Checks
+
+PassMimi evaluates passwords using multiple security indicators.
+
+| Check | Supported |
+|---------|:---------:|
+| Password Length | ✅ |
+| Uppercase Letters | ✅ |
+| Lowercase Letters | ✅ |
+| Numbers | ✅ |
+| Special Characters | ✅ |
+| Breached Password Detection | ✅ |
+| Password Strength Rating | ✅ |
+| Crack Time Estimation | ✅ |
+| Offline Analysis | ✅ |
+
+---
+
+# 🎯 Why Use PassMimi?
+
+Many password strength checkers only analyze character types.
+
+PassMimi goes a step further by detecting passwords found in widely used breach datasets, helping users avoid passwords that attackers already know.
+
+Whether you're an individual improving your online security or a developer validating password quality, PassMimi provides fast, private, and reliable password analysis.
+
+---
+
+# 🗺️ Roadmap
+
+The long-term goal of PassMimi is to become a complete open-source password security platform.
+
+### Current Features
+
+- Password strength analysis
+- Local breach detection
+- Crack time estimation
+- Desktop application
+- Windows support
+- Linux support
+
+### Planned Features
+
+- Secure encrypted password manager
+- Enterprise password policy auditing
+- Website password validation API
+- AI-powered password recommendations
+- Browser extension
+- Command Line Interface (CLI)
+- REST API for developers
+- Multi-language support
+- Security reports for organizations
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome from developers, security researchers, designers, and documentation writers.
+
+You can contribute by:
+
+- Reporting bugs
+- Improving documentation
+- Suggesting new features
+- Optimizing performance
+- Submitting pull requests
+
+Please read the `CONTRIBUTING.md` guide before opening a pull request.
+
+---
+
+# 📄 License
+
+This project is licensed under the MIT License.
+
+See the `LICENSE` file for more information.
+
+---
+
+# ⭐ Support the Project
+
+If PassMimi helps you improve password security, consider supporting the project by:
+
+- ⭐ Starring the repository
+- 🍴 Forking the project
+- 🐞 Reporting bugs
+- 💡 Suggesting new features
+- 🤝 Contributing code
+
+Every contribution helps make PassMimi better for the open-source community.
+
+---
+
+# 💬 Feedback
+
+Found a bug or have an idea?
+
+Open an issue or start a discussion in the GitHub repository.
+
+Community feedback helps shape the future of PassMimi.
+# 📬 Contact
+
+Have a question, found a bug, or want to contribute?
+
+📧 **Email:** fai_ebook@proton.me
+
+You can also open an Issue or start a Discussion on GitHub.
+
+<p align="center">
+
+**⭐ If you find PassMimi useful, consider starring the repository to support future development.**
+
+</p>
+
+---
+
+<p align="center">
+
+Built with ❤️ for the Open Source Community.
+
+**Secure Passwords. Private by Design. Open by Nature.**
+
+</p>

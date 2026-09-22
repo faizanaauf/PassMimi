@@ -1,5 +1,9 @@
 import sys
+from pathlib import Path
 from unittest.mock import patch
+
+# Make the repository root importable when pytest executes from tests/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # app.py imports pywebview for the desktop shell. The password evaluator itself
 # does not need a GUI, so provide a lightweight stub for headless CI.
